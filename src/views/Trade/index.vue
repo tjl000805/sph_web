@@ -3,11 +3,11 @@
     <h3 class="title">填写并核对订单信息</h3>
     <div class="content">
       <h5 class="receive">收件人信息</h5>
-      <div class="address clearFix" v-for="(item,index) in addressInfo" :key="item.id">
-        <span class="username" :class="{selected:item.isDefault == 1}">{{item.consignee}}</span>
-        <p @click="changeDefault(item,addressInfo)">
+      <div class="address clearFix" v-for="(item, index) in addressInfo" :key="item.id">
+        <span class="username" :class="{ selected: item.isDefault == 1 }">{{ item.consignee }}</span>
+        <p @click="changeDefault(item, addressInfo)">
           <span class="s1">{{ item.fullAddress }}</span>
-          <span class="s2">{{item.phoneNum}}</span>
+          <span class="s2">{{ item.phoneNum }}</span>
           <span class="s3" v-show="item.isDefault == 1">默认地址</span>
         </p>
       </div>
@@ -29,7 +29,7 @@
       </div>
       <div class="detail">
         <h5>商品清单</h5>
-        <ul class="list clearFix" v-for="(item,index1) in orderInfo.detailArrayList" :key="item.skuId">
+        <ul class="list clearFix" v-for="(item, index1) in orderInfo.detailArrayList" :key="item.skuId">
           <li>
             <img :src="item.imgUrl" alt="" style="width: 100px;height: 100px;">
           </li>
@@ -38,7 +38,7 @@
             <h4>7天无理由退货</h4>
           </li>
           <li>
-            <h3>￥{{item.orderPrice}}</h3>
+            <h3>￥{{ item.orderPrice }}</h3>
           </li>
           <li>X{{ item.skuNum }}</li>
           <li>有货</li>
@@ -73,304 +73,323 @@
       </ul>
     </div>
     <div class="trade">
-      <div class="price">应付金额:　<span>¥5399.00</span></div>
+      <div class="price">应付金额:　<span>¥{{ orderInfo.totalAmount }}</span></div>
       <div class="receiveInfo">
         寄送至:
-        <span>{{userChangeAddress.fullAddress}}</span>
-        收货人：<span>{{userChangeAddress.consignee}}</span>
-        <span>{{userChangeAddress.phoneNum}}</span>
+        <span>{{ userChangeAddress.fullAddress }}</span>
+        收货人：<span>{{ userChangeAddress.consignee }}</span>
+        <span>{{ userChangeAddress.phoneNum }}</span>
       </div>
     </div>
     <div class="sub clearFix">
-      <router-link class="subBtn" to="/pay">提交订单</router-link>
+      <a class="subBtn" @click="submit">提交订单</a>
     </div>
   </div>
 </template>
 
 <script>
-import { reqSubmitOrder } from '@/api'
 import { mapState } from 'vuex';
-  export default {
-    name: 'Trade',
-    data() {
-      return {
-        msg:''
+export default {
+  name: 'Trade',
+  data() {
+    return {
+      msg: '',
+      orderId:''
+    }
+  },
+  mounted() {
+    this.$store.dispatch('getUserAddress')
+    this.$store.dispatch('getOrderInfo')
+  },
+  methods: {
+    submit() {
+      let { tradeNo } = this.orderInfo
+      let data = {
+        consignee: this.userChangeAddress.consignee,
+        consigneeTel: this.userChangeAddress.phoneNum,
+        deliveryAddress: this.userChangeAddress.fullAddress,
+        paymentWay: 'ONLINE',
+        orderComment: this.msg,
+        orderDetailList: this.orderInfo.detailArrayList
       }
+      this.$api.reqSubmitOrder(tradeNo, data).then(res=>{
+        if(res.code == 200){
+          this.orderId = res.data
+          this.$router.push('/pay?orderId='+this.orderId)
+        }else{
+          alert(res.data)
+        }
+      })
     },
-    mounted(){
-      this.$store.dispatch('getUserAddress')
-      this.$store.dispatch('getOrderInfo')
-    },
-    methods:{
-      changeDefault(address,addressInfo){
-        addressInfo.forEach(item => {
-          item.isDefault = 0
-        });
-        address.isDefault = 1
-        console.log(address.isDefault);
-      }
-    },
-    computed:{
-      ...mapState({
-        addressInfo:state=>state.trade.addressList || [],
-        orderInfo:state=>state.trade.orderInfo || {},
-      }),
-      userChangeAddress(){
-        return this.addressInfo.find(item=>item.isDefault==1) || {}
-      }
+    changeDefault(address, addressInfo) {
+      addressInfo.forEach(item => {
+        item.isDefault = 0
+      });
+      address.isDefault = 1
+      console.log(address.isDefault);
+    }
+  },
+  computed: {
+    ...mapState({
+      addressInfo: state => state.trade.addressList || [],
+      orderInfo: state => state.trade.orderInfo || {},
+    }),
+    userChangeAddress() {
+      return this.addressInfo.find(item => item.isDefault == 1) || {}
     }
   }
+}
 </script>
 
 <style lang="less" scoped>
-  .trade-container {
-    .title {
-      width: 1200px;
-      margin: 0 auto;
-      font-size: 14px;
-      line-height: 21px;
+.trade-container {
+  .title {
+    width: 1200px;
+    margin: 0 auto;
+    font-size: 14px;
+    line-height: 21px;
+  }
+
+  .content {
+    width: 1200px;
+    margin: 10px auto 0;
+    border: 1px solid rgb(221, 221, 221);
+    padding: 25px;
+    box-sizing: border-box;
+
+    .receive,
+    .pay {
+      line-height: 36px;
+      margin: 18px 0;
     }
 
-    .content {
-      width: 1200px;
-      margin: 10px auto 0;
-      border: 1px solid rgb(221, 221, 221);
-      padding: 25px;
-      box-sizing: border-box;
+    .address {
+      padding-left: 20px;
+      margin-bottom: 15px;
 
-      .receive,
-      .pay {
-        line-height: 36px;
-        margin: 18px 0;
+      .username {
+        float: left;
+        width: 100px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        border: 1px solid #ddd;
+        position: relative;
       }
 
-      .address {
-        padding-left: 20px;
-        margin-bottom: 15px;
+      .username::after {
+        content: "";
+        display: none;
+        width: 13px;
+        height: 13px;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        background: url(./images/choosed.png) no-repeat;
+      }
 
-        .username {
+      .username.selected {
+        border-color: #e1251b;
+      }
+
+      .username.selected::after {
+        display: block;
+      }
+
+      p {
+        width: 610px;
+        float: left;
+        line-height: 30px;
+        margin-left: 10px;
+        padding-left: 5px;
+        cursor: pointer;
+
+        .s1 {
           float: left;
-          width: 100px;
+
+        }
+
+        .s2 {
+          float: left;
+          margin: 0 5px;
+        }
+
+        .s3 {
+          float: left;
+          width: 56px;
+          height: 24px;
+          line-height: 24px;
+          margin-left: 10px;
+          background-color: #878787;
+          color: #fff;
+          margin-top: 3px;
+          text-align: center;
+        }
+      }
+
+      p:hover {
+        background-color: #ddd;
+      }
+    }
+
+    .line {
+      height: 1px;
+      background-color: #ddd;
+    }
+
+    .way {
+      width: 1080px;
+      height: 110px;
+      background: #f4f4f4;
+      padding: 15px;
+      margin: 0 auto;
+
+      h5 {
+        line-height: 50px;
+      }
+
+      .info {
+        margin-top: 20px;
+
+        .s1 {
+          float: left;
+          border: 1px solid #ddd;
+          width: 120px;
           height: 30px;
           line-height: 30px;
           text-align: center;
-          border: 1px solid #ddd;
-          position: relative;
-        }
-
-        .username::after {
-          content: "";
-          display: none;
-          width: 13px;
-          height: 13px;
-          position: absolute;
-          right: 0;
-          bottom: 0;
-          background: url(./images/choosed.png) no-repeat;
-        }
-
-        .username.selected {
-          border-color: #e1251b;
-        }
-
-        .username.selected::after {
-          display: block;
+          margin-right: 10px;
         }
 
         p {
-          width: 610px;
-          float: left;
           line-height: 30px;
-          margin-left: 10px;
-          padding-left: 5px;
-          cursor: pointer;
-
-          .s1 {
-            float: left;
-
-          }
-
-          .s2 {
-            float: left;
-            margin: 0 5px;
-          }
-
-          .s3 {
-            float: left;
-            width: 56px;
-            height: 24px;
-            line-height: 24px;
-            margin-left: 10px;
-            background-color: #878787;
-            color: #fff;
-            margin-top: 3px;
-            text-align: center;
-          }
-        }
-
-        p:hover {
-          background-color: #ddd;
-        }
-      }
-
-      .line {
-        height: 1px;
-        background-color: #ddd;
-      }
-
-      .way {
-        width: 1080px;
-        height: 110px;
-        background: #f4f4f4;
-        padding: 15px;
-        margin: 0 auto;
-
-        h5 {
-          line-height: 50px;
-        }
-
-        .info {
-          margin-top: 20px;
-
-          .s1 {
-            float: left;
-            border: 1px solid #ddd;
-            width: 120px;
-            height: 30px;
-            line-height: 30px;
-            text-align: center;
-            margin-right: 10px;
-          }
-
-          p {
-            line-height: 30px;
-          }
-        }
-      }
-
-      .detail {
-        width: 1080px;
-
-        background: #feedef;
-        padding: 15px;
-        margin: 2px auto 0;
-
-        h5 {
-          line-height: 50px;
-        }
-
-        .list {
-          display: flex;
-          justify-content: space-between;
-
-          li {
-            line-height: 30px;
-
-            p {
-
-              margin-bottom: 20px;
-            }
-
-            h4 {
-              color: #c81623;
-              font-weight: 400;
-            }
-
-            h3 {
-
-              color: #e12228;
-            }
-          }
-        }
-      }
-
-      .bbs {
-        margin-bottom: 15px;
-
-        h5 {
-          line-height: 50px;
-        }
-
-        textarea {
-          width: 100%;
-          border-color: #e4e2e2;
-          line-height: 1.8;
-          outline: none;
-          resize: none;
-        }
-      }
-
-      .bill {
-        h5 {
-          line-height: 50px;
-        }
-
-        div {
-          padding-left: 15px;
         }
       }
     }
 
-    .money {
-      width: 1200px;
-      margin: 20px auto;
+    .detail {
+      width: 1080px;
 
-      ul {
-        width: 220px;
-        float: right;
+      background: #feedef;
+      padding: 15px;
+      margin: 2px auto 0;
+
+      h5 {
+        line-height: 50px;
+      }
+
+      .list {
+        display: flex;
+        justify-content: space-between;
 
         li {
           line-height: 30px;
-          display: flex;
-          justify-content: space-between;
 
-          i {
-            color: red;
+          p {
+
+            margin-bottom: 20px;
+          }
+
+          h4 {
+            color: #c81623;
+            font-weight: 400;
+          }
+
+          h3 {
+
+            color: #e12228;
           }
         }
       }
     }
 
-    .trade {
-      box-sizing: border-box;
-      width: 1200px;
-      padding: 10px;
-      margin: 10px auto;
-      text-align: right;
-      background-color: #f4f4f4;
-      border: 1px solid #ddd;
+    .bbs {
+      margin-bottom: 15px;
+
+      h5 {
+        line-height: 50px;
+      }
+
+      textarea {
+        width: 100%;
+        border-color: #e4e2e2;
+        line-height: 1.8;
+        outline: none;
+        resize: none;
+      }
+    }
+
+    .bill {
+      h5 {
+        line-height: 50px;
+      }
 
       div {
-        line-height: 30px;
-      }
-
-      .price span {
-        color: #e12228;
-        font-weight: 700;
-        font-size: 14px;
-      }
-
-      .receiveInfo {
-        color: #999;
+        padding-left: 15px;
       }
     }
-
-    .sub {
-      width: 1200px;
-      margin: 0 auto 10px;
-
-      .subBtn {
-        float: right;
-        width: 164px;
-        height: 56px;
-        font: 700 18px "微软雅黑";
-        line-height: 56px;
-        text-align: center;
-        color: #fff;
-        background-color: #e1251b;
-
-      }
-    }
-
   }
+
+  .money {
+    width: 1200px;
+    margin: 20px auto;
+
+    ul {
+      width: 220px;
+      float: right;
+
+      li {
+        line-height: 30px;
+        display: flex;
+        justify-content: space-between;
+
+        i {
+          color: red;
+        }
+      }
+    }
+  }
+
+  .trade {
+    box-sizing: border-box;
+    width: 1200px;
+    padding: 10px;
+    margin: 10px auto;
+    text-align: right;
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+
+    div {
+      line-height: 30px;
+    }
+
+    .price span {
+      color: #e12228;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .receiveInfo {
+      color: #999;
+    }
+  }
+
+  .sub {
+    width: 1200px;
+    margin: 0 auto 10px;
+
+    .subBtn {
+      float: right;
+      width: 164px;
+      height: 56px;
+      font: 700 18px "微软雅黑";
+      line-height: 56px;
+      text-align: center;
+      color: #fff;
+      background-color: #e1251b;
+
+    }
+  }
+
+}
 </style>

@@ -28,7 +28,13 @@ router.beforeEach(async (to,from,next)=>{
       }
   }
   }else{
-      next()
+    let path = to.path
+      if(path.indexOf('/trade')!=-1||path.indexOf('/pay')!=-1||path.indexOf('/center')!=-1){
+        next('login?redirect='+path)
+      }else{
+        next()
+      }
+      
   }
 })
 export default router;
